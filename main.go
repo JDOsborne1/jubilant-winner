@@ -81,7 +81,7 @@ func main() {
 	}
 	defer close_or_die(conn)
 
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	conn.SetDeadline(time.Now().Add(1 * time.Second))
 
 	_, err = conn.Seek(0, kafka.SeekEnd)
 
