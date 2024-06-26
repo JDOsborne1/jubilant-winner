@@ -56,11 +56,8 @@ func main() {
 	}
 	defer close_or_die(conn)
 
-	batch := conn.ReadBatch(10e3, 10e6)
-	defer close_or_die(batch)
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-	b := make([]byte, 10e3)
 	counter := 0
 	max := 4
 	for {
@@ -75,13 +72,15 @@ func main() {
 			fmt.Println("Reached end of topic")
 			break
 		}
+
 		counter++
 		fmt.Println("batch: " + fmt.Sprint(counter) + " / " + fmt.Sprint(max))
-		n, err := batch.Read(b)
+
+		msg, err := conn.ReadMessage(10)
 		if err != nil {
-			break
+			log.Fatal(err)
 		}
-		fmt.Println(string(b[:n]))
+		fmt.Printf("Key: %v, Value: %v \n", string(msg.Key), string(msg.Value))
 
 		if counter >= max {
 			break
