@@ -35,6 +35,10 @@ func write_test_content(_topic string, _partition int) {
 	_, err = conn.WriteMessages(
 		kafka.Message{Value: []byte("one!")},
 		kafka.Message{Value: []byte("two!")},
+		kafka.Message{Value: []byte("three!")},
+		kafka.Message{Value: []byte("four!")},
+		kafka.Message{Value: []byte("five!")},
+		kafka.Message{Value: []byte("six!")},
 	)
 
 	if err != nil {
@@ -63,8 +67,9 @@ func main() {
 	}
 
 	write_test_content(topic, partition)
+
 	counter := 0
-	max := 4
+	max := 10
 	for {
 
 		last, err := conn.ReadLastOffset()
