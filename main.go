@@ -65,6 +65,16 @@ func main() {
 	max := 4
 	for {
 
+		last, err := conn.ReadLastOffset()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		off, _ := conn.Offset()
+		if off == last {
+			fmt.Println("Reached end of topic")
+			break
+		}
 		counter++
 		fmt.Println("batch: " + fmt.Sprint(counter) + " / " + fmt.Sprint(max))
 		n, err := batch.Read(b)
