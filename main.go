@@ -19,7 +19,7 @@ func close_or_die(_input io.Closer) {
 	}
 }
 
-func write_test_content(_connection io.Writer) {
+func write_test_content(_connection io.Writer) error {
 
 	_, err := _connection.Write([]byte("one!"))
 	_, err = _connection.Write([]byte("two!"))
@@ -29,11 +29,13 @@ func write_test_content(_connection io.Writer) {
 	_, err = _connection.Write([]byte("six!"))
 
 	if err != nil {
-		log.Fatal("failed to write messages: ", err)
+		return fmt.Errorf("failed to write messages: %w", err)
 	}
+
+	return nil
 }
 
-func read_until_done(_connection io.Reader) {
+func read_until_done(_connection io.Reader) error {
 
 	conn := _connection
 	counter := 0
@@ -51,10 +53,10 @@ func read_until_done(_connection io.Reader) {
 
 			if err == kafka.RequestTimedOut {
 				fmt.Println("Request timed out, likely no more messages to parse")
-				return
+				return nil
 			}
 
-			log.Fatalf("Unable to read to the buffer, with error %v\n", err)
+			return fmt.Errorf("Unable to read to the buffer, with error %w", err)
 		}
 
 		fmt.Println(string(buf))
@@ -64,6 +66,26 @@ func read_until_done(_connection io.Reader) {
 		}
 	}
 
+	return nil
+
+}
+
+func generate_from_now_connection(_topic string, _partition int) (*kafka.Conn, error) {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", _topic, _partition)
+	if err != nil {
+		return &kafka.Conn{}, fmt.Errorf("failed to dial leader: %w ", err)
+	}
+
+	conn.SetDeadline(time.Now().Add(1 * time.Second))
+
+	_, err = conn.Seek(0, kafka.SeekEnd)
+
+	if err != nil {
+		return &kafka.Conn{}, fmt.Errorf("failed to seek latest message with: %w", err)
+	}
+
+	return conn, nil
+
 }
 
 func main() {
@@ -71,22 +93,20 @@ func main() {
 	topic := "test"
 	partition := 0
 
-	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
-	if err != nil {
-		log.Fatal("failed to dial leader: ", err)
-	}
+	conn, err := generate_from_now_connection(topic, partition)
 	defer close_or_die(conn)
-
-	conn.SetDeadline(time.Now().Add(1 * time.Second))
-
-	_, err = conn.Seek(0, kafka.SeekEnd)
-
 	if err != nil {
-		log.Fatal("failed to seek latest message with: ", err)
+		log.Fatal(err)
 	}
 
-	write_test_content(conn)
+	err = write_test_content(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	read_until_done(conn)
+	err = read_until_done(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
