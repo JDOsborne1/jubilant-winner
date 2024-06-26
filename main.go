@@ -13,17 +13,13 @@ import (
 
 var docstring string = "This is a simulator, using Kafka as a collection of marketplaces to simulate trade in a virtual world"
 
-type Closer interface {
-	Close() error
-}
-
-func close_or_die(_input Closer) {
+func close_or_die(_input io.Closer) {
 	if err := _input.Close(); err != nil {
 		log.Panicf("Failed to close closer of type %T, with error %v", _input, err)
 	}
 }
 
-func write_test_content(_connection io.ReadWriter) {
+func write_test_content(_connection io.Writer) {
 
 	_, err := _connection.Write([]byte("one!"))
 	_, err = _connection.Write([]byte("two!"))
@@ -37,7 +33,7 @@ func write_test_content(_connection io.ReadWriter) {
 	}
 }
 
-func read_until_done(_connection io.ReadWriter) {
+func read_until_done(_connection io.Reader) {
 
 	conn := _connection
 	counter := 0
