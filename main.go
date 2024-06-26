@@ -48,8 +48,6 @@ func main() {
 	topic := "test"
 	partition := 0
 
-	write_test_content(topic, partition)
-
 	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
 	if err != nil {
 		log.Fatal("failed to dial leader: ", err)
@@ -58,6 +56,13 @@ func main() {
 
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
+	_, err = conn.Seek(0, kafka.SeekEnd)
+
+	if err != nil {
+		log.Fatal("failed to seek latest message with: ", err)
+	}
+
+	write_test_content(topic, partition)
 	counter := 0
 	max := 4
 	for {
