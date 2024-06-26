@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -36,31 +37,31 @@ func write_test_content(_connection io.ReadWriter) {
 	}
 }
 
-func read_until_done(_connection *kafka.Conn) {
+func read_until_done(_connection io.ReadWriter) {
+
 	conn := _connection
 	counter := 0
 	max := 10
 	for {
-
-		last, err := conn.ReadLastOffset()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		off, _ := conn.Offset()
-		if off == last {
-			fmt.Println("Reached end of topic")
-			break
-		}
-
 		counter++
 		fmt.Println("batch: " + fmt.Sprint(counter) + " / " + fmt.Sprint(max))
 
-		msg, err := conn.ReadMessage(10)
+		buf := make([]byte, 10)
+		_, err := conn.Read(buf)
 		if err != nil {
-			log.Fatal(err)
+			if errors.Is(err, io.ErrShortBuffer) {
+				fmt.Println("Buffer too short, try a longer one")
+			}
+
+			if err == kafka.RequestTimedOut {
+				fmt.Println("Request timed out, likely no more messages to parse")
+				return
+			}
+
+			log.Fatalf("Unable to read to the buffer, with error %v\n", err)
 		}
-		fmt.Printf("Key: %v, Value: %v \n", string(msg.Key), string(msg.Value))
+
+		fmt.Println(string(buf))
 
 		if counter >= max {
 			break
