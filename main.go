@@ -56,9 +56,9 @@ func main() {
 	}
 	defer close_or_die(conn)
 
-	conn.SetReadDeadline(time.Now().Add(20 * time.Second))
 	batch := conn.ReadBatch(10e3, 10e6)
 	defer close_or_die(batch)
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
 	b := make([]byte, 10e3)
 	counter := 0
