@@ -36,27 +36,8 @@ func write_test_content(_connection io.ReadWriter) {
 	}
 }
 
-func main() {
-	fmt.Println(docstring)
-	topic := "test"
-	partition := 0
-
-	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
-	if err != nil {
-		log.Fatal("failed to dial leader: ", err)
-	}
-	defer close_or_die(conn)
-
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
-
-	_, err = conn.Seek(0, kafka.SeekEnd)
-
-	if err != nil {
-		log.Fatal("failed to seek latest message with: ", err)
-	}
-
-	write_test_content(conn)
-
+func read_until_done(_connection *kafka.Conn) {
+	conn := _connection
 	counter := 0
 	max := 10
 	for {
@@ -85,5 +66,30 @@ func main() {
 			break
 		}
 	}
+
+}
+
+func main() {
+	fmt.Println(docstring)
+	topic := "test"
+	partition := 0
+
+	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader: ", err)
+	}
+	defer close_or_die(conn)
+
+	conn.SetDeadline(time.Now().Add(10 * time.Second))
+
+	_, err = conn.Seek(0, kafka.SeekEnd)
+
+	if err != nil {
+		log.Fatal("failed to seek latest message with: ", err)
+	}
+
+	write_test_content(conn)
+
+	read_until_done(conn)
 
 }
