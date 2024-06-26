@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
@@ -21,30 +22,18 @@ func close_or_die(_input Closer) {
 	}
 }
 
-func write_test_content(_topic string, _partition int) {
+func write_test_content(_connection io.ReadWriter) {
 
-	conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", _topic, _partition)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
-
-	// Defer cleanup and logging issues
-	defer close_or_die(conn)
-
-	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	_, err = conn.WriteMessages(
-		kafka.Message{Value: []byte("one!")},
-		kafka.Message{Value: []byte("two!")},
-		kafka.Message{Value: []byte("three!")},
-		kafka.Message{Value: []byte("four!")},
-		kafka.Message{Value: []byte("five!")},
-		kafka.Message{Value: []byte("six!")},
-	)
+	_, err := _connection.Write([]byte("one!"))
+	_, err = _connection.Write([]byte("two!"))
+	_, err = _connection.Write([]byte("three!"))
+	_, err = _connection.Write([]byte("four!"))
+	_, err = _connection.Write([]byte("five!"))
+	_, err = _connection.Write([]byte("six!"))
 
 	if err != nil {
 		log.Fatal("failed to write messages: ", err)
 	}
-
 }
 
 func main() {
@@ -58,7 +47,7 @@ func main() {
 	}
 	defer close_or_die(conn)
 
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	conn.SetDeadline(time.Now().Add(10 * time.Second))
 
 	_, err = conn.Seek(0, kafka.SeekEnd)
 
@@ -66,7 +55,7 @@ func main() {
 		log.Fatal("failed to seek latest message with: ", err)
 	}
 
-	write_test_content(topic, partition)
+	write_test_content(conn)
 
 	counter := 0
 	max := 10
