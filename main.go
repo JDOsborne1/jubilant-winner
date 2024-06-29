@@ -35,16 +35,37 @@ func write_test_content(_connection io.Writer) error {
 	return nil
 }
 
+func lumberjack(_conn io.Writer, _energy int) {
+
+	counter := 0
+	var err error
+
+	for {
+		if counter > _energy {
+			fmt.Println("Lumberjack runs out of energy")
+			return
+		}
+		counter++
+
+		_, err = _conn.Write([]byte("I Chop Wood"))
+		if err != nil {
+			log.Panicf("Unable to write messages to conn")
+		}
+
+	}
+
+}
+
 func read_until_done(_connection io.Reader) error {
 
 	conn := _connection
 	counter := 0
-	max := 10
+	max := 30
 	for {
 		counter++
 		fmt.Println("batch: " + fmt.Sprint(counter) + " / " + fmt.Sprint(max))
 
-		buf := make([]byte, 10)
+		buf := make([]byte, 100)
 		_, err := conn.Read(buf)
 		if err != nil {
 			if errors.Is(err, io.ErrShortBuffer) {
@@ -99,10 +120,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = write_test_content(conn)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go lumberjack(conn, 3)
+	go lumberjack(conn, 2)
+	go lumberjack(conn, 4)
 
 	err = read_until_done(conn)
 	if err != nil {
